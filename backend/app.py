@@ -1,10 +1,12 @@
 # app.py
 
 from flask import Flask, send_from_directory
+from flask_cors import CORS  # Import CORS from flask_cors
 from app.upload_images import upload_images_bp
 from app.background_remover import ensure_directories
 
 app = Flask(__name__)
+CORS(app)  # Apply CORS to your Flask app
 
 # Register the blueprint for /upload route
 app.register_blueprint(upload_images_bp)

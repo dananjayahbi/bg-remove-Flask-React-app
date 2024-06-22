@@ -1,61 +1,30 @@
 import React, { useState } from "react";
-import {
-  Upload,
-  Button,
-  Typography,
-  Image,
-  message,
-  Card,
-  Row,
-  Col,
-} from "antd";
+import { Upload, message, Card, Row, Col, Button, Skeleton, Typography, Image } from "antd";
 import {
   UploadOutlined,
   CloudUploadOutlined,
   DownloadOutlined,
 } from "@ant-design/icons";
-import axios from "axios";
 import HeaderComp from "../components/HeaderComp";
 import Footer from "../components/Footer";
 
-const { Title } = Typography;
 const { Dragger } = Upload;
+const { Title } = Typography;
 
 const Home = () => {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [processedImages, setProcessedImages] = useState([]);
-  const [imageId, setImageId] = useState(null);
   const [processingStatus, setProcessingStatus] = useState([]);
 
-  const checkImageStatus = async (id) => {
-    try {
-      const response = await axios.get(
-        `http://localhost:5000/api/bgRemove/status/${id}`
-      );
-      if (response.data.status === "completed") {
-        const images = response.data.files.map((file) => ({
-          url: `http://localhost:5000/${id}/${file}`,
-          name: file,
-        }));
-        setProcessedImages(images);
-        console.log(images);
-        setLoading(false);
-        message.success("Images processed successfully!");
-        // console.log(response.data.files)
-        setFiles([]); // Reset the uploaded files after processing
-      } else {
-        setProcessingStatus((prevStatus) => [
-          ...prevStatus,
-          response.data.message,
-        ]);
-        setTimeout(() => checkImageStatus(id), 2000);
-      }
-    } catch (error) {
-      console.error(error);
-      setLoading(false);
-      message.error("Error checking image status.");
-    }
+  const handleAdd = ({ fileList }) => {
+    const newFiles = [...fileList];
+    setFiles(newFiles);
+  };
+
+  const handleRemove = (file) => {
+    const newFiles = files.filter((f) => f.uid !== file.uid);
+    setFiles(newFiles);
   };
 
   const handleUpload = async () => {
@@ -64,37 +33,44 @@ const Home = () => {
       return;
     }
 
-    const userId = localStorage.getItem("userId");
-    if (!userId) {
-      message.error("User ID not found in local storage.");
-      return;
-    }
-
-    const formData = new FormData();
-    files.forEach((file) => {
-      formData.append("images", file);
-    });
-    formData.append("userId", userId); // Append userId to the form data
-
     setLoading(true);
-    try {
-      const response = await axios.post(
-        "http://localhost:5000/api/bgRemove/upload",
-        formData
-      );
-      const { id } = response.data;
-      setImageId(id);
-      setTimeout(() => checkImageStatus(id), 2000);
-    } catch (error) {
-      setLoading(false);
-      message.error("Error uploading images.");
-      console.error(error);
-    }
-  };
+    setProcessingStatus([...files.map(() => "Processing...")]); // Display skeleton cards
 
-  const beforeUpload = (file) => {
-    setFiles((prevFiles) => [...prevFiles, file]);
-    return false; // Prevent automatic upload
+    try {
+      const formData = new FormData();
+      files.forEach((file) => {
+        formData.append("files", file.originFileObj);
+      });
+
+      const response = await fetch("http://localhost:5000/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      console.log("Upload success:", data);
+
+      // Prepend base URL to processed image URLs
+      const baseImageUrl = "http://localhost:5000";
+      const processedImagesWithUrl = data.processed_file_urls.map((url) => ({
+        name: `Processed Image`,
+        url: `${baseImageUrl}${url}`,
+      }));
+
+      // Update processed images state
+      setProcessedImages(processedImagesWithUrl);
+
+      message.success("Upload and processing successfully.");
+
+    } catch (error) {
+      console.error("Error uploading:", error);
+      message.error("Error uploading.");
+    } finally {
+      setLoading(false);
+      setProcessingStatus([]); // Clear skeleton cards
+      setFiles([]); // Clear input files after successful upload
+    }
   };
 
   const handleDownload = (url) => {
@@ -137,9 +113,10 @@ const Home = () => {
               bodyStyle={{ padding: "20px" }}
             >
               <Dragger
-                beforeUpload={beforeUpload}
                 multiple
-                showUploadList={false}
+                fileList={files}
+                onChange={handleAdd}
+                onRemove={handleRemove}
               >
                 <p className="ant-upload-drag-icon">
                   <UploadOutlined />
@@ -151,7 +128,13 @@ const Home = () => {
                   Support for a single or bulk upload.
                 </p>
               </Dragger>
-              <div style={{display: "flex", justifyContent: "center"}} >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  marginTop: 20,
+                }}
+              >
                 <Button
                   type="primary"
                   icon={<CloudUploadOutlined />}
@@ -159,7 +142,7 @@ const Home = () => {
                   style={{ width: "300px", marginTop: 20 }}
                   disabled={files.length === 0 || loading}
                 >
-                  Upload and Remove Backgrounds
+                  Upload and Process Images
                 </Button>
               </div>
             </Card>
@@ -167,34 +150,33 @@ const Home = () => {
         </Row>
         {loading ? (
           <>
-            <ul>
-              {processingStatus.map((status, index) => (
-                <li key={index}>{status}</li>
-              ))}
-            </ul>
-            <Title level={3} style={{ textAlign: "center", marginTop: 20 }}>
-              Uploaded Images:
+            <Title level={3} style={{ textAlign: "center", marginTop: 40 }}>
+              Processing Images...
             </Title>
             <Row gutter={[16, 16]} justify="center">
-              {files.map((file, index) => (
+              {processingStatus.map((status, index) => (
                 <Col xs={24} sm={12} md={8} key={index}>
                   <Card
-                    loading={true}
                     style={{
                       textAlign: "center",
                       boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
                       minHeight: "150px",
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
                     }}
                     bodyStyle={{ padding: "20px" }}
-                  />
+                  >
+                    <Skeleton avatar active />
+                  </Card>
                 </Col>
               ))}
             </Row>
           </>
         ) : (
           <Row gutter={[16, 16]} justify="center" style={{ marginTop: 20 }}>
-            {processedImages.map((image) => (
-              <Col xs={24} sm={12} md={8} key={image.name}>
+            {processedImages.map((image, index) => (
+              <Col xs={24} sm={12} md={8} key={index}>
                 <Card
                   cover={<Image src={image.url} alt={image.name} />}
                   actions={[
@@ -206,7 +188,8 @@ const Home = () => {
                       Download
                     </Button>,
                   ]}
-                ></Card>
+                >
+                </Card>
               </Col>
             ))}
           </Row>
