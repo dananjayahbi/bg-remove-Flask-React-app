@@ -9,14 +9,14 @@ const Register = () => {
     setLoading(true);
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/users/register",
+        "http://localhost:5000/users",
         {
           email: values.email,
           password: values.password,
         }
       );
       //If response status is 200, registration is successful
-      if (response.status === 200) {
+      if (response.status === 201) {
         message.success("Registration successful!");
         window.location.href = "/login";
       }
