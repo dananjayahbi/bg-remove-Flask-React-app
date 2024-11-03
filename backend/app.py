@@ -113,7 +113,6 @@ def create_user():
     new_user = {
         'email': email,
         'password': hashed_password,  # Store hashed password in the database
-        'gallery': []
     }
 
     # Insert new user into MongoDB
@@ -143,6 +142,36 @@ def delete_user(user_id):
     result = users_collection.delete_one({'_id': ObjectId(user_id)})
     if result.deleted_count == 1:
         return 'Deleted successfully', 200
+    else:
+        return 'User not found', 404
+    
+# Change password route
+@app.route('/users/<string:user_id>/change-password', methods=['POST'])
+def change_password(user_id):
+    change_password_data = request.json
+    old_password = change_password_data.get('old_password')
+    new_password = change_password_data.get('new_password')
+
+    # Check if old and new password are provided
+    if not old_password or not new_password:
+        return 'Old and new password are required', 400
+
+    # Find user by id
+    user = users_collection.find_one({'_id': ObjectId(user_id)})
+
+    if user:
+        # Verify hashed password
+        if bcrypt.checkpw(old_password.encode('utf-8'), user['password']):
+            # Hash the new password
+            hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
+            # Update user's password
+            result = users_collection.update_one({'_id': ObjectId(user_id)}, {'$set': {'password': hashed_password}})
+            if result.modified_count == 1:
+                return 'Password changed successfully', 200
+            else:
+                return 'Something went wrong', 500
+        else:
+            return 'Invalid old password', 401
     else:
         return 'User not found', 404
 
