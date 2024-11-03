@@ -1,12 +1,25 @@
-import React from "react";
-import { Typography, Divider } from "antd";
+import React, { useEffect, useState } from "react";
+import { Layout } from "antd";
 import HeaderComp from "../components/HeaderComp";
 import Footer from "../components/Footer";
 
-const { Title, Paragraph } = Typography;
+const { Header, Content } = Layout;
 
 const About = () => {
   const isLogged = window.localStorage.getItem("LoggedIn");
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth < 445);
+
+  //Function to handle window resize
+  const handleResize = () => {
+    setIsMobileView(window.innerWidth < 445);
+  };
+
+  useEffect(() => {
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   if (!isLogged) {
     // Redirect to login page if not logged in
@@ -14,38 +27,21 @@ const About = () => {
   }
 
   return (
-    <div>
-      <HeaderComp />
-      <div
+    <Layout>
+      <Header style={{ background: "transparent", padding: "0", zIndex: 999 }}>
+        <HeaderComp /> <br />
+      </Header>
+      <Content
         style={{
-          padding: "0 50px",
-          marginTop: 64,
-          minHeight: "calc(100vh - 185px)",
+          padding: isMobileView ? "50px 10px" : "50px 50px",
+          minHeight: "calc(100vh - 120px)",
         }}
       >
-        <div style={{ background: "#fff", padding: 24, minHeight: 380 }}>
-          <Title level={2}>About Us</Title>
-          <Divider />
-          <Paragraph>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam
-            ornare nisl sed turpis fermentum, non faucibus lacus condimentum.
-            Suspendisse potenti. Vivamus varius ipsum at arcu congue eleifend.
-            In in ante ut lorem molestie ullamcorper. Aenean varius, magna eu
-            ultricies aliquam, libero sapien accumsan lorem, vel congue tortor
-            nisi non dolor. Integer sit amet bibendum sapien.
-          </Paragraph>
-          <Paragraph>
-            Curabitur vel feugiat odio. Suspendisse potenti. Integer nec magna
-            in leo hendrerit rhoncus nec vitae odio. Vivamus eleifend, lectus
-            vel dapibus semper, purus lacus pulvinar urna, ut consectetur sapien
-            arcu ac mauris. Quisque vel arcu condimentum, maximus justo sit
-            amet, fermentum ipsum. Donec eget ligula semper, lobortis urna et,
-            tempus ipsum.
-          </Paragraph>
-        </div>
-      </div>
+        {/* Add content */}
+        <p>About Us</p>
+      </Content>
       <Footer />
-    </div>
+    </Layout>
   );
 };
 

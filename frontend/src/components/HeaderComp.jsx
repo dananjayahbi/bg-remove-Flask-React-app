@@ -1,10 +1,11 @@
 import React from "react";
-import { Layout, Menu, Avatar, Dropdown, ConfigProvider } from "antd";
+import { Menu, Avatar, Dropdown, ConfigProvider } from "antd";
 import {
   GithubOutlined,
   QuestionCircleOutlined,
   HomeOutlined,
   UserOutlined,
+  PhoneOutlined,
 } from "@ant-design/icons";
 import { Link, useLocation } from "react-router-dom"; // Import useLocation
 
@@ -14,8 +15,9 @@ const HeaderComp = () => {
   const items = [
     { key: "1", label: "Home", url: "/home", icon: <HomeOutlined /> },
     { key: "2", label: "About Us", url: "/about", icon: <QuestionCircleOutlined /> },
+    { key: "3", label: "Contact", url: "/contact", icon: <PhoneOutlined /> },
     {
-      key: "3",
+      key: "4",
       label: "GitHub",
       url: "https://github.com/dananjayahbi",
       external: true,
@@ -33,9 +35,6 @@ const HeaderComp = () => {
     <Menu>
       <Menu.Item key="profile">
         <Link to="/profile">Profile</Link>
-      </Menu.Item>
-      <Menu.Item key="gallery">
-        <Link to="/gallery">Gallery</Link>
       </Menu.Item>
       <Menu.Item key="logout" onClick={handleLogout}>
         Logout
