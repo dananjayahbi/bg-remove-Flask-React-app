@@ -1,13 +1,30 @@
 import React, { useState } from "react";
-import { Upload, message, Card, Row, Col, Button, Skeleton, Typography, Image } from "antd";
+import {
+  Upload,
+  message,
+  Card,
+  Row,
+  Col,
+  Layout,
+  Button,
+  Skeleton,
+  Typography,
+  Image,
+  List,
+  Avatar,
+} from "antd";
 import {
   UploadOutlined,
   CloudUploadOutlined,
   DownloadOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
+import axios from "axios";
 import HeaderComp from "../components/HeaderComp";
 import Footer from "../components/Footer";
+import HeroSection from "../components/HeroSection";
 
+const { Header, Content } = Layout;
 const { Dragger } = Upload;
 const { Title } = Typography;
 
@@ -17,11 +34,31 @@ const Home = () => {
   const [processedImages, setProcessedImages] = useState([]);
   const [processingStatus, setProcessingStatus] = useState([]);
 
-  const handleAdd = ({ fileList }) => {
-    const newFiles = [...fileList];
-    setFiles(newFiles);
+  // Function to generate previews using FileReader
+  const generatePreview = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   };
 
+  // Handle file addition
+  const handleAdd = async ({ fileList }) => {
+    // Create previews for new files and update the file list
+    const updatedFiles = await Promise.all(
+      fileList.map(async (file) => {
+        if (!file.preview) {
+          file.preview = await generatePreview(file.originFileObj || file);
+        }
+        return file;
+      })
+    );
+    setFiles(updatedFiles);
+  };
+
+  // Handle file removal
   const handleRemove = (file) => {
     const newFiles = files.filter((f) => f.uid !== file.uid);
     setFiles(newFiles);
@@ -42,14 +79,17 @@ const Home = () => {
         formData.append("files", file.originFileObj);
       });
 
-      const response = await fetch("http://localhost:5000/upload", {
-        method: "POST",
-        body: formData,
-      });
+      const response = await axios.post(
+        "http://localhost:5000/upload", // Ensure this URL is correct
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data", // Set correct content type
+          },
+        }
+      );
 
-      const data = await response.json();
-
-      console.log("Upload success:", data);
+      const data = response.data;
 
       // Prepend base URL to processed image URLs
       const baseImageUrl = "http://localhost:5000";
@@ -62,7 +102,6 @@ const Home = () => {
       setProcessedImages(processedImagesWithUrl);
 
       message.success("Upload and processing successfully.");
-
     } catch (error) {
       console.error("Error uploading:", error);
       message.error("Error uploading.");
@@ -73,26 +112,41 @@ const Home = () => {
     }
   };
 
+  // Restrict to image files
+  const beforeUpload = (file) => {
+    if (file.type.startsWith("image/")) {
+      setFiles((prevFiles) => [...prevFiles, { ...file, originFileObj: file }]);
+    } else {
+      message.error("You can only upload image files!");
+    }
+    return false; // Prevent automatic upload
+  };
+
   const handleDownload = (url) => {
     fetch(url)
       .then((response) => response.blob())
       .then((blob) => {
-        const url = window.URL.createObjectURL(blob);
+        const downloadUrl = window.URL.createObjectURL(blob);
         const downloadLink = document.createElement("a");
-        downloadLink.href = url;
+        downloadLink.href = downloadUrl;
         downloadLink.download = "processed_image.png";
         document.body.appendChild(downloadLink);
         downloadLink.click();
-        window.URL.revokeObjectURL(url);
+        window.URL.revokeObjectURL(downloadUrl);
         document.body.removeChild(downloadLink);
       })
       .catch((error) => console.error("Error downloading image:", error));
   };
 
   return (
-    <>
-      <HeaderComp />
-      <div style={{ minHeight: "calc(100vh - 125px)" }}>
+    <Layout className="layout" style={{ minHeight: "100vh" }}>
+      <Header style={{ background: "transparent", padding: "0", zIndex: 999 }}>
+        <HeaderComp /> <br />
+      </Header>
+      <Content style={{ minHeight: "calc(100vh - 125px)" }}>
+        <Row gutter={16} justify="center" style={{ marginBottom: "80px" }}>
+          <HeroSection />
+        </Row>
         <Row gutter={16} justify="center">
           <Col
             span={24}
@@ -117,6 +171,8 @@ const Home = () => {
                 fileList={files}
                 onChange={handleAdd}
                 onRemove={handleRemove}
+                beforeUpload={beforeUpload}
+                showUploadList={false}
               >
                 <p className="ant-upload-drag-icon">
                   <UploadOutlined />
@@ -128,6 +184,41 @@ const Home = () => {
                   Support for a single or bulk upload.
                 </p>
               </Dragger>
+
+              {/* Display thumbnails of added files */}
+              {files.length > 0 && (
+                <List
+                  itemLayout="horizontal"
+                  dataSource={files}
+                  renderItem={(file) => (
+                    <List.Item
+                      actions={[
+                        <Button
+                          type="link"
+                          icon={<DeleteOutlined />}
+                          onClick={() => handleRemove(file)}
+                        />,
+                      ]}
+                    >
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        {/* Thumbnail */}
+                        {file.preview && (
+                          <Avatar
+                            src={file.preview} // Render file preview
+                            shape="square"
+                            size={64}
+                          />
+                        )}
+                        {/* File name */}
+                        <span style={{ marginLeft: 10, fontWeight: 500 }}>
+                          {file.name}
+                        </span>
+                      </div>
+                    </List.Item>
+                  )}
+                />
+              )}
+
               <div
                 style={{
                   display: "flex",
@@ -188,15 +279,14 @@ const Home = () => {
                       Download
                     </Button>,
                   ]}
-                >
-                </Card>
+                ></Card>
               </Col>
             ))}
           </Row>
         )}
-      </div>
+      </Content>
       <Footer style={{ position: "fixed", bottom: 0, width: "100%" }} />
-    </>
+    </Layout>
   );
 };
 
