@@ -1,69 +1,89 @@
-import React from "react";
-import { Typography, Form, Input, Button } from "antd";
+import React, { useEffect, useState } from "react";
+import { Layout, Card, Typography, Button, Tag } from "antd";
 import HeaderComp from "../components/HeaderComp";
 import Footer from "../components/Footer";
 
-const { Title } = Typography;
+const { Header, Content } = Layout;
+const { Title, Paragraph, Text } = Typography;
 
-const Contact = () => {
-  const isLogged = window.localStorage.getItem("LoggedIn");
+const ContactUs = () => {
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth < 445);
 
-  const onFinish = (values) => {
-    console.log("Received values:", values);
+  // Handle window resize
+  const handleResize = () => {
+    setIsMobileView(window.innerWidth < 445);
   };
 
-  if (!isLogged) {
-    // Redirect to login page if not logged in
-    window.location.href = "/login";
-  }
+  useEffect(() => {
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   return (
-    <div>
-      <HeaderComp />
-      <div
+    <Layout>
+      <Header style={{ background: "transparent", padding: "0", zIndex: 999 }}>
+        <HeaderComp />
+        <br />
+      </Header>
+      <Content
         style={{
-          padding: "0 50px",
-          marginTop: 64,
-          minHeight: "calc(100vh - 185px)",
+          padding: isMobileView ? "50px 10px" : "50px 50px",
+          minHeight: "calc(100vh - 120px)",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
         }}
       >
-        <div style={{ background: "#fff", padding: 24, minHeight: 380 }}>
-          <Title level={2}>Contact Us</Title>
-          <Form name="contact-form" onFinish={onFinish} layout="vertical">
-            <Form.Item
-              label="Name"
-              name="name"
-              rules={[{ required: true, message: "Please enter your name!" }]}
-            >
-              <Input />
-            </Form.Item>
-            <Form.Item
-              label="Email"
-              name="email"
-              rules={[{ required: true, message: "Please enter your email!" }]}
-            >
-              <Input />
-            </Form.Item>
-            <Form.Item
-              label="Message"
-              name="message"
-              rules={[
-                { required: true, message: "Please enter your message!" },
-              ]}
-            >
-              <Input.TextArea rows={4} />
-            </Form.Item>
-            <Form.Item>
-              <Button type="primary" htmlType="submit">
-                Submit
-              </Button>
-            </Form.Item>
-          </Form>
-        </div>
-      </div>
+        <Card
+          style={{
+            width: isMobileView ? "100%" : "600px",
+            textAlign: "center",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+            padding: "40px",
+            borderRadius: "10px",
+          }}
+        >
+          <Title level={2}>Get In Touch</Title>
+          <Paragraph>
+            We’d love to hear from you! Whether you have a question, a
+            suggestion, or just want to say hello, feel free to reach out. You
+            can always contact us via email, and we’ll get back to you as soon
+            as possible.
+          </Paragraph>
+
+          <div style={{ margin: "20px 0" }}>
+            <Text strong>Email us at: &nbsp;</Text>
+            <Tag color="blue" style={{ padding: "5px 15px 0px 15px" }}>
+              <Paragraph
+                style={{
+                  fontSize: "16px",
+                  marginTop: "8px",
+                  display: "inline-block",
+                }}
+                copyable={{ text: "test@test.com" }} // Only the plain email is copyable
+              >
+                <a href="mailto:test@test.com">test@test.com</a>{" "}
+                {/* Clickable email */}
+              </Paragraph>
+            </Tag>
+          </div>
+
+          <Paragraph>
+            We are always happy to assist you in any way we can. Don't hesitate
+            to get in touch with us. Whether you’re seeking support or just want
+            to know more about our services, we’re here to help!
+          </Paragraph>
+
+          <Button type="primary" size="large" href="mailto:test@test.com">
+            Contact Us
+          </Button>
+        </Card>
+      </Content>
       <Footer />
-    </div>
+    </Layout>
   );
 };
 
-export default Contact;
+export default ContactUs;
