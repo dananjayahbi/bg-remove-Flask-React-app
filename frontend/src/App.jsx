@@ -6,7 +6,6 @@ import Home from "./Pages/Home";
 import About from "./Pages/About";
 import Contact from "./Pages/Contact";
 import Profile from "./Pages/Profile";
-import Gallery from "./Pages/Gallery";
 import "./App.css";
 
 const App = () => {
@@ -25,7 +24,6 @@ const App = () => {
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/profile" element={<Profile />} />
-        <Route path="/gallery" element={<Gallery />} />
       </Routes>
     </>
   )

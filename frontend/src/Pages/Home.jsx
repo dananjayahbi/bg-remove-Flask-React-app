@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Upload,
   message,
@@ -28,11 +28,26 @@ const { Header, Content } = Layout;
 const { Dragger } = Upload;
 const { Title } = Typography;
 
+const LOCAL_STORAGE_KEY = "processedImages"; // Key for local storage
+
 const Home = () => {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [processedImages, setProcessedImages] = useState([]);
   const [processingStatus, setProcessingStatus] = useState([]);
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth < 445);
+
+  //Function to handle window resize
+  const handleResize = () => {
+    setIsMobileView(window.innerWidth < 445);
+  };
+
+  useEffect(() => {
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   // Function to generate previews using FileReader
   const generatePreview = (file) => {
@@ -63,6 +78,13 @@ const Home = () => {
     const newFiles = files.filter((f) => f.uid !== file.uid);
     setFiles(newFiles);
   };
+
+  // Fetch processed images from local storage on component mount
+  useEffect(() => {
+    const storedImages =
+      JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY)) || [];
+    setProcessedImages(storedImages);
+  }, []);
 
   const handleUpload = async () => {
     if (files.length === 0) {
@@ -101,7 +123,13 @@ const Home = () => {
       // Update processed images state
       setProcessedImages(processedImagesWithUrl);
 
-      message.success("Upload and processing successfully.");
+      // Save current processed images to local storage (replacing any previous data)
+      localStorage.setItem(
+        LOCAL_STORAGE_KEY,
+        JSON.stringify(processedImagesWithUrl)
+      );
+
+      message.success("Background Removed successfully.");
     } catch (error) {
       console.error("Error uploading:", error);
       message.error("Error uploading.");
@@ -138,31 +166,33 @@ const Home = () => {
       .catch((error) => console.error("Error downloading image:", error));
   };
 
+  // Handle deletion of a processed image from local storage
+  const handleDeleteProcessed = (imageUrl) => {
+    const updatedImages = processedImages.filter(
+      (image) => image.url !== imageUrl
+    );
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedImages));
+    setProcessedImages(updatedImages); // Update the UI without reloading
+    message.success("Image deleted successfully.");
+  };
+
   return (
     <Layout className="layout" style={{ minHeight: "100vh" }}>
       <Header style={{ background: "transparent", padding: "0", zIndex: 999 }}>
         <HeaderComp /> <br />
       </Header>
-      <Content style={{ minHeight: "calc(100vh - 125px)" }}>
+      <Content style={{ padding: isMobileView ? "50px 10px" : "50px 50px" }}>
         <Row gutter={16} justify="center" style={{ marginBottom: "80px" }}>
           <HeroSection />
         </Row>
         <Row gutter={16} justify="center">
-          <Col
-            span={24}
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              marginTop: "50px",
-            }}
-          >
+          <Col span={24}>
             <Card
-              title="Upload Images"
+              title={`(${files.length} Images added)`}
               style={{
                 textAlign: "center",
                 boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
                 minHeight: "150px",
-                width: "900px",
               }}
               bodyStyle={{ padding: "20px" }}
             >
@@ -219,46 +249,40 @@ const Home = () => {
                 />
               )}
 
-              <div
+              <Button
+                type="primary"
+                icon={<CloudUploadOutlined />}
+                onClick={handleUpload}
                 style={{
-                  display: "flex",
-                  justifyContent: "center",
+                  width: isMobileView ? "100px" : "300px",
                   marginTop: 20,
                 }}
+                disabled={files.length === 0 || loading}
               >
-                <Button
-                  type="primary"
-                  icon={<CloudUploadOutlined />}
-                  onClick={handleUpload}
-                  style={{ width: "300px", marginTop: 20 }}
-                  disabled={files.length === 0 || loading}
-                >
-                  Upload and Process Images
-                </Button>
-              </div>
+                {isMobileView ? "Upload" : "Remove Backgrounds"}
+              </Button>
             </Card>
           </Col>
         </Row>
+        {/* Show skeleton placeholders while processing */}
         {loading ? (
           <>
-            <Title level={3} style={{ textAlign: "center", marginTop: 40 }}>
+            <Title level={3} style={{ textAlign: "center", marginTop: 20 }}>
               Processing Images...
             </Title>
             <Row gutter={[16, 16]} justify="center">
-              {processingStatus.map((status, index) => (
+              {files.map((_, index) => (
                 <Col xs={24} sm={12} md={8} key={index}>
                   <Card
+                    loading={true}
                     style={{
                       textAlign: "center",
                       boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
                       minHeight: "150px",
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
                     }}
                     bodyStyle={{ padding: "20px" }}
                   >
-                    <Skeleton avatar active />
+                    <Skeleton.Image />
                   </Card>
                 </Col>
               ))}
@@ -266,8 +290,8 @@ const Home = () => {
           </>
         ) : (
           <Row gutter={[16, 16]} justify="center" style={{ marginTop: 20 }}>
-            {processedImages.map((image, index) => (
-              <Col xs={24} sm={12} md={8} key={index}>
+            {processedImages.map((image) => (
+              <Col xs={24} sm={12} md={8} key={image.name}>
                 <Card
                   cover={<Image src={image.url} alt={image.name} />}
                   actions={[
@@ -278,8 +302,16 @@ const Home = () => {
                     >
                       Download
                     </Button>,
+                    <Button
+                      type="link"
+                      icon={<DeleteOutlined />}
+                      onClick={() => handleDeleteProcessed(image.url)}
+                      style={{ color: "red" }} // Set the button text to red
+                    >
+                      Delete
+                    </Button>,
                   ]}
-                ></Card>
+                />
               </Col>
             ))}
           </Row>
