@@ -9,6 +9,9 @@ from bson.objectid import ObjectId
 import bcrypt
 from dotenv import load_dotenv
 import os
+import shutil
+import threading
+import time
 
 # MongoDB connection string and Flask secret key
 MONGO_URI = os.getenv('MONGO_URI')
@@ -35,6 +38,43 @@ def initialize():
 @app.before_request
 def before_request():
     initialize()
+
+# Function to clear contents of Uploads and Outputs folders
+def clear_folders():
+    uploads_dir = "assets/Uploads"
+    outputs_dir = "assets/Outputs"
+
+    while True:
+        # Clear Uploads directory
+        for filename in os.listdir(uploads_dir):
+            file_path = os.path.join(uploads_dir, filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+            except Exception as e:
+                print(f'Failed to delete {file_path}. Reason: {e}')
+
+        # Clear Outputs directory
+        for session_dir in os.listdir(outputs_dir):
+            session_path = os.path.join(outputs_dir, session_dir)
+            try:
+                shutil.rmtree(session_path)
+            except Exception as e:
+                print(f'Failed to delete {session_path}. Reason: {e}')
+
+        # Sleep for 30 seconds before clearing again
+        time.sleep(36000)
+
+# Start the folder clearing function in a background thread
+def start_clear_folder_thread():
+    thread = threading.Thread(target=clear_folders)
+    thread.daemon = True  # Daemonize thread to ensure it exits when the main program does
+    thread.start()
+
+# Start the folder clearing thread when the app starts
+start_clear_folder_thread()
 
 # Route to serve processed images
 @app.route('/outputs/<session_id>/<filename>')
@@ -82,7 +122,7 @@ def login():
         if bcrypt.checkpw(password.encode('utf-8'), user['password']):
             # Store user's ObjectId in session
             session['user_id'] = str(user['_id'])
-            return jsonify({'user_id': str(user['_id'])}), 200
+            return jsonify({'user_id': str(user['_id']), 'email': email}), 200
         else:
             return 'Invalid email or password', 401
     else:
@@ -176,4 +216,8 @@ def change_password(user_id):
         return 'User not found', 404
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Only start the folder clearing thread if not in the reloader process
+    if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
+        start_clear_folder_thread()
+        
+    app.run(debug=True, port=os.getenv("PORT", default=5000))

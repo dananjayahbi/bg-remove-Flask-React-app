@@ -1,9 +1,8 @@
 Flask
 Flask-PyMongo
 rembg
-Pillow
-numpy<2
 flask-cors
 pymongo
 bcrypt
 python-dotenv
+gunicorn

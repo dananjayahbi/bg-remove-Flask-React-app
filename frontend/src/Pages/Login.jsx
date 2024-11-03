@@ -20,6 +20,7 @@ const Login = () => {
         // window.localStorage.setItem("token", response.data.token);
         window.localStorage.setItem("LoggedIn", true);
         window.localStorage.setItem("userId", response.data.user_id);
+        window.localStorage.setItem("email", response.data.email);
         message.success("Login successful!");
         window.location.href = "/home";
       }
