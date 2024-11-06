@@ -1,17 +1,37 @@
 import React from "react";
-import { Layout, Menu, Avatar, Dropdown } from "antd";
-import { UserOutlined } from "@ant-design/icons";
+import { Menu, Avatar, Dropdown, ConfigProvider } from "antd";
+import {
+  GithubOutlined,
+  QuestionCircleOutlined,
+  HomeOutlined,
+  UserOutlined,
+  PhoneOutlined,
+} from "@ant-design/icons";
 import { Link, useLocation } from "react-router-dom"; // Import useLocation
-const { Header } = Layout;
-import logo from "../assets/logo.png";
 
 const HeaderComp = () => {
   const location = useLocation(); // Get current location
+  const email = window.localStorage.getItem("email");
+
+  // Get the first letter of the email for the avatar
+  const avatarLetter = email?.charAt(0).toUpperCase();
 
   const items = [
-    { key: "1", label: "Home", url: "/home" },
-    { key: "2", label: "About Us", url: "/about" },
-    { key: "3", label: "Contact Us", url: "/contact" },
+    { key: "1", label: "Home", url: "/home", icon: <HomeOutlined /> },
+    {
+      key: "2",
+      label: "About",
+      url: "/about",
+      icon: <QuestionCircleOutlined />,
+    },
+    { key: "3", label: "Contact", url: "/contact", icon: <PhoneOutlined /> },
+    {
+      key: "4",
+      label: "GitHub",
+      url: "https://github.com/dananjayahbi",
+      external: true,
+      icon: <GithubOutlined />,
+    },
   ];
 
   const handleLogout = () => {
@@ -19,14 +39,11 @@ const HeaderComp = () => {
     window.localStorage.clear();
     window.location.href = "/login";
   };
-  
+
   const menu = (
     <Menu>
       <Menu.Item key="profile">
         <Link to="/profile">Profile</Link>
-      </Menu.Item>
-      <Menu.Item key="gallery">
-        <Link to="/gallery">Gallery</Link>
       </Menu.Item>
       <Menu.Item key="logout" onClick={handleLogout}>
         Logout
@@ -36,32 +53,20 @@ const HeaderComp = () => {
 
   const currentKey = items.find((item) => item.url === location.pathname)?.key; // Find key based on URL
 
-
   return (
-    <div>
-      <Header
-        style={{
-          display: "flex",
-          alignItems: "center",
-          backgroundColor: "transparent",
+    <header style={styles.header}>
+      <ConfigProvider
+        theme={{
+          token: {
+            // Seed Token
+            colorPrimary: "#1677FF",
+            borderRadius: 2,
+
+            // Alias Token
+            colorBgContainer: "transparent",
+          },
         }}
       >
-        <a href="/home">
-          <div
-            className="demo-logo"
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <img
-              src={logo}
-              alt="Company Logo"
-              style={{ width: "80px", height: "auto", marginTop: "15px" }}
-            />
-          </div>
-        </a>
         <Menu
           theme="light"
           mode="horizontal"
@@ -72,23 +77,50 @@ const HeaderComp = () => {
           }}
         >
           {items.map((item) => (
-            <Menu.Item key={item.key}>
-              <Link to={item.url}>{item.label}</Link>
+            <Menu.Item key={item.key} icon={item.icon}>
+              {item.external ? (
+                <a href={item.url} target="_blank" rel="noopener noreferrer">
+                  {item.label}
+                </a>
+              ) : (
+                <Link to={item.url}>{item.label}</Link>
+              )}
             </Menu.Item>
           ))}
         </Menu>
-        <Dropdown overlay={menu} trigger={["click"]}>
-          <a
-            className="ant-dropdown-link"
-            onClick={(e) => e.preventDefault()}
-            style={{ marginLeft: "auto" }}
-          >
-            <Avatar icon={<UserOutlined />} />
-          </a>
-        </Dropdown>
-      </Header>
-    </div>
+      </ConfigProvider>
+      <Dropdown overlay={menu} trigger={["click"]}>
+        <a
+          className="ant-dropdown-link"
+          onClick={(e) => e.preventDefault()}
+          style={{ marginLeft: "auto" }}
+        >
+          <Avatar style={{ backgroundColor: "#007bff" }}>
+            {" "}
+            {avatarLetter}{" "}
+          </Avatar>
+        </a>
+      </Dropdown>
+    </header>
   );
+};
+
+const styles = {
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "10px 50px",
+    backgroundColor: "#f8f9fa", // Light background
+    borderBottom: "2px solid #e0e0e0",
+    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+    position: "fixed",
+    top: 0,
+    width: "100%",
+    zIndex: 1000,
+  },
+  // Mobile responsiveness
+  "@media (maxWidth: 768px)": {},
 };
 
 export default HeaderComp;

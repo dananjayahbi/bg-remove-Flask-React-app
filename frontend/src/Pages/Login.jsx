@@ -9,7 +9,7 @@ const Login = () => {
     setLoading(true);
     try {
       const response = await axios.post(
-        "http://localhost:5000/api/users/login",
+        "http://localhost:5000/users/login",
         {
           email: values.email,
           password: values.password,
@@ -17,14 +17,15 @@ const Login = () => {
       );
       //If response status is 200, login is successful
       if (response.status === 200) {
-        window.localStorage.setItem("token", response.data.token);
+        // window.localStorage.setItem("token", response.data.token);
         window.localStorage.setItem("LoggedIn", true);
-        window.localStorage.setItem("userId", response.data.user.id);
+        window.localStorage.setItem("userId", response.data.user_id);
+        window.localStorage.setItem("email", response.data.email);
         message.success("Login successful!");
         window.location.href = "/home";
       }
     } catch (error) {
-      message.error("Registration failed. Please try again.");
+      message.error("Login failed. Please try again.");
     }
     setLoading(false);
   };
