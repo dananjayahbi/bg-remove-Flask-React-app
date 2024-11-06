@@ -98,7 +98,7 @@ Before you begin, ensure you have the following installed on your machine:
 
 - Create a new file called **.env** at the root backend directory.
 - Add the following environment variables:
-  > MONGO_URI = (Your mongodb url)
+  > MONGO_URI = (Your mongodb url) 
   > SECRET_KEY = (JWT secret key)
 
 > SECRET_EXAMPLE = 6Jc9da8Kfpx2YLSSeI6UJwp8q5EObZwcMfboV2uS1jxEZyDhaT3HFXNKm4et0dq
